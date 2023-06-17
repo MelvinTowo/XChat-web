@@ -1,13 +1,16 @@
 //Melvin Towo
-//ALFA MEDIA X
-// Xchat website
+// ALFA MEDIA X
+// Xchat 
 'use client';
-import React, {useState, useEffect, useCallback} from 'react'
+import React, {useState, useCallback} from 'react'
 import { FieldValues, useForm, SubmitHandler } from 'react-hook-form';
 import Input from '@/app/components/inputs/inputs';
 import Button from '@/app/components/Button';
 import AuthSocialButton from './AuthSocialButton';
 import {BsGithub, BsGoogle, BsFacebook} from 'react-icons/bs'
+import axios from 'axios';
+import { toast } from 'react-hot-toast';
+import {signIn} from 'next-auth/react'
 
 type Variant = 'LOGIN' | 'REGISTER';
 
@@ -16,6 +19,8 @@ const AuthForm = () => {
     const [variant, setVariant] = useState<Variant>('LOGIN');
     const [isLoading, setIsLoading] = useState(false);
     
+    // The toggleVariant function is intended to be used as an event handler or 
+    // trigger for changing the variant state in response to user interaction
     const toggleVariant = useCallback(() => {
         if(variant === 'LOGIN') {
             setVariant('REGISTER');
@@ -34,23 +39,51 @@ const AuthForm = () => {
         defaultValues: {
             name: '',
             email: '',
-            password: '',
+            password: ''
         }
     });
 
     const onSubmit: SubmitHandler<FieldValues> = (data) => {
         setIsLoading(true);
         if(variant === 'REGISTER') {
-            //Axios Register
+            //Here we post the data to the route function in the api/register folder
+            //Toast pulls a little notification letting user know there was an error
+            axios.post('/api/register', data)
+            .catch(() => toast.error('Something went wrong'))
+            .finally(() => setIsLoading(false)) //This stops loading when a new user is created
         }
 
         if (variant === 'LOGIN') {
-            //NextAuth Sign in
+            signIn('credentials', {
+                ...data,
+                redirect: false
+            }).then((callback) => {
+                if(callback?.error) {
+                    toast.error('Invalid Username or Password');
+                }
+
+                if (callback?.ok && !callback.error) {
+                    toast.success('Success!')
+                }
+            }).finally(() => setIsLoading(false))
         }
     }
 
     const socialAction = (action: string) => {
+        //login via google, facebook and github!
+
         setIsLoading(true);
+
+        signIn(action, {redirect: false}).then((callback) => {
+            if (callback?.error) {
+                toast.error('Invalid Username or Password')
+            }
+
+            if (callback?.ok && !callback.error) {
+                toast.success('Success!')
+            }
+        }).finally(() => setIsLoading(false))
+
     }
 
     return (
@@ -79,8 +112,8 @@ const AuthForm = () => {
                     {variant === 'REGISTER' && (
                         <Input id='name' label="Name" register={register} errors={errors}/>
                     )}
-                    <Input id='Email' label="Email address" type='email' register={register} errors={errors}/>
-                    <Input id='password' label="Password" register={register} errors={errors}/>
+                    <Input id='email' label="Email address" type='email' register={register} errors={errors} disabled={isLoading}/>
+                    <Input id='password' label="Password" type='password' register={register} errors={errors} disabled={isLoading}/>
                     <div>
                         <Button
                         disabled={isLoading}
@@ -131,7 +164,7 @@ const AuthForm = () => {
                         />
                     </div>
                 </div>
-                <div className='flex gap-2 justify-center text-sm mt-6 px-2 text-gray-500'>
+                <div className='flex gap-2 justify-center text-sm mt-6 px-2 text-gray-600'>
                     <div>
                         {variant === 'LOGIN' ? 'New to XChat?' : 'Already have an account?'}
                     </div>
@@ -142,7 +175,7 @@ const AuthForm = () => {
                     </div>
                 </div>
                 <br />
-                <div className='flex  justify-center text-xs px-2 text-gray-300'>
+                <div className='flex  justify-center text-xs px-2 text-gray-400'>
                     <p>©ALFA Media, Xchat&trade;, some rights reserved</p>
                 </div>
             </div>

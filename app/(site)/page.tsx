@@ -1,4 +1,6 @@
 import Image from "next/image"
+
+// Auth form contains all the inputs to take the info in! 
 import AuthForm from "./components/AuthForm"
 export default function Home() {
     return (
