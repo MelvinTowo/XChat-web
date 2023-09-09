@@ -2,7 +2,7 @@
 // ALFA MEDIA X
 // Xchat 
 'use client';
-import React, {useState, useCallback} from 'react'
+import React, {useState, useCallback, useEffect} from 'react'
 import { FieldValues, useForm, SubmitHandler } from 'react-hook-form';
 import Input from '@/app/components/inputs/inputs';
 import Button from '@/app/components/Button';
@@ -10,15 +10,25 @@ import AuthSocialButton from './AuthSocialButton';
 import {BsGithub, BsGoogle, BsFacebook} from 'react-icons/bs'
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
-import {signIn} from 'next-auth/react'
+import {signIn, useSession} from 'next-auth/react'
+import { useRouter } from 'next/navigation';
 
 type Variant = 'LOGIN' | 'REGISTER';
 
 const AuthForm = () => {
 
-    const [variant, setVariant] = useState<Variant>('LOGIN');
+    const session = useSession(); // Login in sessions
+    const router = useRouter()
+    const [variant, setVariant] = useState<Variant>('LOGIN'); // changing form states from login to register
     const [isLoading, setIsLoading] = useState(false);
     
+    useEffect(() => {
+        if(session?.status === 'authenticated') {
+            router.push('/users')
+            console.log('Authenticated')
+        }
+    }, [session?.status, router])
+
     // The toggleVariant function is intended to be used as an event handler or 
     // trigger for changing the variant state in response to user interaction
     const toggleVariant = useCallback(() => {
@@ -49,6 +59,7 @@ const AuthForm = () => {
             //Here we post the data to the route function in the api/register folder
             //Toast pulls a little notification letting user know there was an error
             axios.post('/api/register', data)
+            .then(() => signIn('credentials', data))
             .catch(() => toast.error('Something went wrong'))
             .finally(() => setIsLoading(false)) //This stops loading when a new user is created
         }
@@ -64,6 +75,7 @@ const AuthForm = () => {
 
                 if (callback?.ok && !callback.error) {
                     toast.success('Success!')
+                    router.push('/users')
                 }
             }).finally(() => setIsLoading(false))
         }
